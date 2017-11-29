@@ -5,7 +5,7 @@ import numpy as np
 import re
 import os
 from collections import Counter
-
+import toArff
 
 # def load_data(path):
 #   data_X = []
@@ -86,10 +86,12 @@ class mwmote:
                 self.write_resample(path_saveNew + '\\for_' + str(p + 1) + '\\re_mwsmote_' + name, X)
             else:  # 如果name是一个文件夹
                 path1 = path_original + "\\" + name  # 更新原始数据集路径
-                os.mkdir(path_saveNew + "\\" + name)  # 创建和原始数据集文件夹一致的文件夹，用于保存采样的结果
+                if not os.path.exists(path_saveNew + "\\" + name):
+                    os.mkdir(path_saveNew + "\\" + name)  # 创建和原始数据集文件夹一致的文件夹，用于保存采样的结果
                 path2 = path_saveNew + "\\" + name  # 更新保存数据的路径为新创建的文件夹
                 for i in range(m):  # 在这个文件夹中创建存放每一次循环采样结果的文件夹
-                    os.mkdir(path2 + "\\for_" + str(i + 1))
+                    if not os.path.exists(path2 + "\\for_" + str(i + 1)):
+                        os.mkdir(path2 + "\\for_" + str(i + 1))
                 self.run_dir(path1, path2,p)  # 调用循环采样的方法，循环调用
 
 
@@ -97,13 +99,14 @@ class mwmote:
 if __name__ == '__main__':
     # with open('./heart_scale.pickle', 'r') as f:
     #   X,Y = pickle.load(f)
-    pathOriginal=""
-    pathsaveNew=""
+    pathOriginal="C:\\Users\\Administrator\\Desktop\\Original_dataset20171121"
+    pathsaveNew="C:\\Users\\Administrator\\Desktop\\test_dic"
+    pathsaveNewArff="C:\\Users\\Administrator\\Desktop\\test_dic_arff"
     mw=mwmote()
     m=10
     for p in range(m):
         mw.run_dir(pathOriginal,pathsaveNew,p)
-
+    toArff.run_dir(pathsaveNew,pathsaveNewArff)
     # X, Y = example()
     #
     # X_p = []
