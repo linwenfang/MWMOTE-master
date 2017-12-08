@@ -1,3 +1,4 @@
+#coding=utf-8
 import math, copy, bisect, random, logging, multiprocessing
 
 logger = logging.getLogger(__name__)
@@ -68,19 +69,19 @@ def clus_dis(A, B, K):
 
 
 def MWMOTE(X, Y, N, k1=5, k2=3, k3=0.5, C_th=5, CMAX=2, C_p=3, return_mode='only'):
-    logger.debug('MWMOTE: Starting with %d instances' % len(Y))
+    # logger.debug('MWMOTE: Starting with %d instances' % len(Y))
     # Generating indices of S_min, S_maj
     S_min, S_maj = [], []
-    for index, i in enumerate(Y):
+    for index, i in enumerate(Y):#将多数类和少数类的下标分开
         if i == 0:
             S_min.append(index)
         else:
             S_maj.append(index)
     if type(k3) == float:
-        k3 = int(round(len(S_min) * k3))
+        k3 = int(round(len(S_min) * k3))#确定k3，用于
     k = Knn()
 
-    logger.debug(' Step   0: Computing Knn table')
+    # logger.debug(' Step   0: Computing Knn table')
     k.fit(X)
 
     # Step 1~2: Generating S_minf
@@ -91,7 +92,7 @@ def MWMOTE(X, Y, N, k1=5, k2=3, k3=0.5, C_th=5, CMAX=2, C_p=3, return_mode='only
         if not all((neighbor in S_maj) for neighbor in neighbors):
             S_minf.append(i)
 
-    logger.debug(' Step 1~2: %d in S_minf' % len(S_minf))
+    # logger.debug(' Step 1~2: %d in S_minf' % len(S_minf))
 
     # Step 3~4: Generating S_bmaj
     k.fit_subset(S_maj)
@@ -100,7 +101,7 @@ def MWMOTE(X, Y, N, k1=5, k2=3, k3=0.5, C_th=5, CMAX=2, C_p=3, return_mode='only
         neighbors = k.kneighbors(i, k2)
         S_bmaj.extend(neighbors)
     S_bmaj = list(set(S_bmaj))
-    logger.debug(' Step 3~4: %d in S_bmaj' % len(S_bmaj))
+    # logger.debug(' Step 3~4: %d in S_bmaj' % len(S_bmaj))
 
     # Step 5~6: Generating S_imin
 
@@ -112,7 +113,7 @@ def MWMOTE(X, Y, N, k1=5, k2=3, k3=0.5, C_th=5, CMAX=2, C_p=3, return_mode='only
         S_imin.extend(neighbors)
         N_min[i] = neighbors
     S_imin = list(set(S_imin))
-    logger.debug(' Step 5~6: %d in S_imin' % len(S_imin))
+    # logger.debug(' Step 5~6: %d in S_imin' % len(S_imin))
 
     # Step 7~9: Generating I_w, S_w, S_p
     I_w = {}
@@ -124,7 +125,12 @@ def MWMOTE(X, Y, N, k1=5, k2=3, k3=0.5, C_th=5, CMAX=2, C_p=3, return_mode='only
                 closeness_factor = 0.
             else:
                 distance_n = math.sqrt(math.fsum(((a - b) ** 2 for a, b in zip(X[x], X[y])))) / len(X[x])
-                closeness_factor = min(C_th, (1 / distance_n)) / C_th * CMAX
+                '''抛出distance_n为0的情况'''
+                try:
+                    closeness_factor = min(C_th, (1 / distance_n)) / C_th * CMAX
+                except ZeroDivisionError as c:
+
+                    closeness_factor = min(C_th, (1 / (distance_n+1e-6))) / C_th * CMAX
             I_w[(y, x)] = closeness_factor
             sum_C_f += I_w[(y, x)]
         for x in S_imin:
@@ -140,7 +146,7 @@ def MWMOTE(X, Y, N, k1=5, k2=3, k3=0.5, C_th=5, CMAX=2, C_p=3, return_mode='only
     WeightSum = math.fsum(S_w.values())
     for x in S_w:
         S_p[x] = float(S_w[x]) / WeightSum
-    logger.debug(' Step 7~9: %d in I_w' % len(I_w))
+    # logger.debug(' Step 7~9: %d in I_w' % len(I_w))
 
     # Step 10:Generating L, clusters of S_min
     d_avg = 0.
@@ -154,25 +160,25 @@ def MWMOTE(X, Y, N, k1=5, k2=3, k3=0.5, C_th=5, CMAX=2, C_p=3, return_mode='only
     d_avg /= len(S_minf)
     T_h = d_avg * C_p
 
-    L = {index: [i] for index, i in enumerate(S_min)}
+    L = {index: [i] for index, i in enumerate(S_min)}#这是一个字典，{index：[value]}
     clusters_number = range(len(S_min))
-    dis_table = [[0 for i in clusters_number] for j in clusters_number]
-    for i in clusters_number:
+    dis_table = [[0 for i in clusters_number] for j in clusters_number]#clusters_numeber X cluster_nubmber的列表,值为0
+    for i in clusters_number:#第i个聚类和其他所有的第j个聚类的距离
         for j in clusters_number:
             dis_table[i][j] = clus_dis(L[i], L[j], k)
-    MAX = max(max(j) for j in dis_table)
+    MAX = max(max(j) for j in dis_table)#找整体49行49列的最大值
     for i in clusters_number:
         dis_table[i][i] = MAX
     for i in S_min:
-        MIN = min(min(j) for j in dis_table)
+        MIN = min(min(j) for j in dis_table)#找整体49行49列的最小值
         if MIN > T_h:
             break
         for j in clusters_number:
             if MIN in dis_table[j]:
-                b = dis_table[j].index(MIN)
-                a = j
+                b = dis_table[j].index(MIN)#b是最小值在第j个聚类中的下标。。。目标样本下标
+                a = j#源样本下标
                 break
-        L[a].extend(L[b])
+        L[a].extend(L[b])#将两个聚类合并
 
         del L[b]
         clusters_number.remove(b)
@@ -189,7 +195,7 @@ def MWMOTE(X, Y, N, k1=5, k2=3, k3=0.5, C_th=5, CMAX=2, C_p=3, return_mode='only
     for i, clu in L.items():
         for j in clu:
             which_cluster[j] = i
-    logger.debug(' Step  10: %d clusters' % len(L))
+    # logger.debug(' Step  10: %d clusters' % len(L))
 
     # Step 11: Generating X_gen, Y_gen
     X_gen = []

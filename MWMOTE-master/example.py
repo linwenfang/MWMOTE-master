@@ -23,20 +23,20 @@ import toArff
 #   return (data_X,data_Y)
 
 
-# def example():
-#     N = 5000
-#     X = []
-#     Y = [1 for i in range(N)]
-#
-#     for i in range(N):
-#         X.append([random.uniform(0, 10), random.uniform(0, 10)])
-#
-#     for i, j in enumerate(X):
-#         if math.hypot(j[0], j[1]) < 5 or math.hypot(j[0] - 10, j[1] - 10) < 2:
-#             Y[i] = -1
-#         if random.random() < 0.01:
-#             Y[i] = -Y[i]
-#     return X, Y
+def example():
+    N = 5000
+    X = []
+    Y = [1 for i in range(N)]
+
+    for i in range(N):
+        X.append([random.uniform(0, 10), random.uniform(0, 10)])
+
+    for i, j in enumerate(X):
+        if math.hypot(j[0], j[1]) < 5 or math.hypot(j[0] - 10, j[1] - 10) < 2:
+            Y[i] = -1
+        if random.random() < 0.01:
+            Y[i] = -Y[i]
+    return X, Y
 
 
 class mwmote:
@@ -55,7 +55,7 @@ class mwmote:
                 num = float(item)
                 numList.append(num)
             X_data.append(numList[:-1])
-            Y_data.append(numList[-1])
+            Y_data.append(int(numList[-1]))
         f.close()
         return X_data, Y_data
 
@@ -73,10 +73,18 @@ class mwmote:
         pathdir_original = os.listdir(path_original)  # 列出原始样本文件夹下的文件名和文件夹名
         for name in pathdir_original:  # 对文件名进行循环
             if os.path.isfile(path_original + "\\" + name):  # 如果name是一个文件，这里传入的路径必须是绝对路径才可以判断
+                print path_original + "\\" + name
                 X, Y = self.loadSample(path_original + "\\" + name)  # 加载文件数据
                 countDict=dict(Counter(Y))
                 N=countDict[1]-countDict[0]
-                MWMOTE.MWMOTE(X, Y, N)
+                try:
+                    MWMOTE.MWMOTE(X, Y, N)
+                except:
+                    # print path_original + "\\" + name
+                    fw=open("invalide.txt",'a')
+                    fw.write(str(path_original + "\\" + name)+'\n')
+                    fw.close()
+
                 for k,v in enumerate(Y):
                     X[k].append(v)
 
@@ -99,15 +107,18 @@ class mwmote:
 if __name__ == '__main__':
     # with open('./heart_scale.pickle', 'r') as f:
     #   X,Y = pickle.load(f)
-    pathOriginal="C:\\Users\\Administrator\\Desktop\\Original_dataset20171121"
-    pathsaveNew="C:\\Users\\Administrator\\Desktop\\test_dic"
-    pathsaveNewArff="C:\\Users\\Administrator\\Desktop\\test_dic_arff"
+    pathOriginal="E:\Papers_dataset\OriginalDataSet"
+    pathsaveNew="E:\Papers_dataset\ResempledDataSet\MWMOTE"
+    pathsaveNewArff="E:\Papers_dataset\ResempledDataSet\MWMOTE_arff"
     mw=mwmote()
     m=10
     for p in range(m):
+        print "第"+str(p+1)+"次循环"
         mw.run_dir(pathOriginal,pathsaveNew,p)
     toArff.run_dir(pathsaveNew,pathsaveNewArff)
     # X, Y = example()
+    # print Y
+    # print dict(Counter(Y))
     #
     # X_p = []
     # X_n = []
